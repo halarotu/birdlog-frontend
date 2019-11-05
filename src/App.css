@@ -1,3 +1,20 @@
 .App {
   text-align: center;
 }
+
+.Bird {
+  margin: 35px;
+}
+
+.BirdPicture {
+  height: 150px;
+}
+
+.BirdInfo {
+}
+
+.Link {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif ;
+  font-size: larger;
+  margin-top: 20px;
+}
