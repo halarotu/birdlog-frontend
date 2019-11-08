@@ -34,8 +34,14 @@ function Bird({bird}) {
   return (
     bird ?
     <div>
+      <Link to="/" className="Link">
+        <Button fullWidth={true} variant='outlined'>Palaa etusivulle</Button>
+      </Link>
       <Link to="/birds" className="Link">
-        <Button>Siirry aakkostettuun listaan</Button>
+        <Button>Kaikki linnut</Button>
+      </Link>
+      <Link to="/taxonomicrank" className="Link">
+        <Button>Kaikki lahkot</Button>
       </Link>
       <Card className="Bird">
         <div className="BirdInfo">
@@ -102,8 +108,17 @@ function Taxonomicrank({taxonomicRanks, birds, selectedOrderName, selectedFamily
       </Link>
       <Grid>
         <div>
-          {selectedOrder ? <h3>Lahko: {selectedOrderName}</h3> : <h3>Lahkot</h3>}
-          {selectedFamily ? <h4>Heimo: {selectedFamilyName}</h4> : ''}
+          {selectedOrder ? 
+            <Link to="/taxonomicrank" className="Link">
+              <Button fullWidth={true} >Kaikki lahkot</Button>
+            </Link>: ''}
+          {selectedOrder ? selectedFamily ? 
+            <h3>Lahko:  <Link to={"/taxonomicrank/" + selectedOrderName}>{selectedOrder.nameFin} / {selectedOrderName}</Link></h3> : 
+            <h3>Lahko: {selectedOrder.nameFin} / {selectedOrderName}</h3> : <h3>Lahkot</h3>}
+          {selectedFamily ? selectedGenus ? 
+            <h4>Heimo: <Link to={"/taxonomicrank/" + selectedOrderName + "/" + selectedFamilyName}>
+              {selectedFamily.nameFin} / {selectedFamilyName}</Link></h4> : 
+            <h4>Heimo: {selectedFamily.nameFin} / {selectedFamilyName}</h4> : ''}
           {selectedGenus ? <h5>Suku: {selectedGenusName}</h5> : ''}
           {getChildren()}
         </div>
@@ -121,6 +136,10 @@ function Home() {
         <Link to="/taxonomicrank">
           <Button>Lintujen tieteellinen luokittelu</Button>
         </Link>
+        <CardMedia className="FrontPagePicture"
+          image="/lapasorsa-bw.jpeg"
+          title="Lapasorsa"
+        />
     </Box>
   )
 }
