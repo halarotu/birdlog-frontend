@@ -1,9 +1,9 @@
 import React, {useState, useEffect} from 'react';
 import './App.css';
-import {Box, Button, Card, CardMedia, Container, Grid } from '@material-ui/core';
+import {Box, Button, Card, CardMedia, Container, Grid, Input } from '@material-ui/core';
 import {BrowserRouter as Router, Route, Link} from 'react-router-dom'
 
-const BASE_URL = 'http://localhost:8080'
+const BASE_URL = ''
 
 function Birds({birds}) {
   birds = birds.sort(function(a, b) {
@@ -127,7 +127,67 @@ function Taxonomicrank({taxonomicRanks, birds, selectedOrderName, selectedFamily
   )
 }
 
+function Login() {
+
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    fetch(BASE_URL + "/perform_login", {
+      method: 'post',
+      body: {'username': username, 'password': password}
+    })
+    .then(res => {
+      if (res.redirected) window.location = res.url
+    })
+    .catch(e => console.warn(e))
+
+  }
+
+  const handleFormDataChange = (event) => {
+    switch (event.target.name) {
+      case 'username' :
+          setUsername(event.target.value)
+          break
+      case 'password' :
+          setPassword(event.target.value)
+          break
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h2>Kirjautuminen</h2>
+      <div className="FormElement">
+        <p>Käyttäjätunnus:</p>
+        <input type="text" name="username" value={username} onChange={handleFormDataChange} />
+      </div>      
+      <div className="FormElement">
+        <p>Salasana:</p>
+        <input type="password" name="password" value={password} onChange={handleFormDataChange} />
+      </div>
+      <div>
+        <input type="submit" name="submit-button" value="Kirjaudu" />
+      </div>
+    </form>
+  )
+}
+
 function Home() {
+
+  const onLogout = () => {
+    fetch(BASE_URL + "/perform_logout", {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/json' }
+    })
+    .then(res => {
+      if (res.redirected) window.location = res.url
+    })
+    .catch(e => console.warn(e))
+  }
+
   return (
     <Box>
         <Link to="/birds">
@@ -140,6 +200,7 @@ function Home() {
           image="/lapasorsa-bw.jpeg"
           title="Lapasorsa"
         />
+        <Button onClick={onLogout}>Kirjaudu ulos</Button>
     </Box>
   )
 }
@@ -204,6 +265,7 @@ function App() {
               <Taxonomicrank taxonomicRanks={taxonomicRanks} birds={birds} selectedOrderName={match.params.order} 
                 selectedFamilyName={match.params.family} selectedGenusName={match.params.genus} />} 
             />
+            <Route exact path="/login" render={() => <Login />} />
           </Router>
       </Container>
     </div>
