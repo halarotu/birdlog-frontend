@@ -3,10 +3,27 @@ import './App.css';
 import {Box, Button, Card, CardMedia, Container, Grid, Input } from '@material-ui/core';
 import {BrowserRouter as Router, Route, Link} from 'react-router-dom'
 
-const BASE_URL = ''
+interface IBird {
+  family: string,
+  order: string,
+  genus: string,
+  nameFin: string,
+  nameScientific: string
+}
 
-function Birds({birds}) {
-  birds = birds.sort(function(a, b) {
+interface ITaxonomicRank {
+  nameScientific: string,
+  nameFin: string,
+  level: string,
+  parent: string
+}
+
+type BirdOrRank = IBird | ITaxonomicRank;
+
+const BASE_URL = 'http://localhost:8080/api'
+
+function Birds({birds}: {birds: IBird[] | undefined}): JSX.Element {
+  birds = birds?.sort(function(a: IBird, b: IBird) {
     if  (a.nameFin > b.nameFin) {
       return 1
     }
@@ -19,7 +36,7 @@ function Birds({birds}) {
       <Link to="/" className="Link">
         <Button fullWidth={true} variant='outlined' >Palaa etusivulle</Button>
       </Link>
-      {birds ? birds.map((bird, i) => 
+      {birds ? birds.map((bird: IBird, i: number) => 
         <Link to={'/birds/'+bird.nameScientific} key={i} > 
           <Button>
             {bird.nameFin}
@@ -30,7 +47,7 @@ function Birds({birds}) {
   )
 }
 
-function Bird({bird}) {
+function Bird({bird}: {bird: IBird | undefined}): JSX.Element {
   return (
     bird ?
     <div>
@@ -57,17 +74,18 @@ function Bird({bird}) {
         />
       </Card>
     </div>
-    : ''
+    : <div/>
   )
 }
 
-function Taxonomicrank({taxonomicRanks, birds, selectedOrderName, selectedFamilyName, selectedGenusName}) {
+function Taxonomicrank({taxonomicRanks, birds, selectedOrderName, selectedFamilyName, selectedGenusName}: 
+  {taxonomicRanks: ITaxonomicRank[], birds?: IBird[], selectedOrderName?: string, selectedFamilyName?: string, selectedGenusName?: string}): JSX.Element {
 
   const selectedOrder = taxonomicRanks.find(rank => rank.nameScientific === selectedOrderName)
   const selectedFamily = taxonomicRanks.find(rank => rank.nameScientific === selectedFamilyName)
   const selectedGenus = taxonomicRanks.find(rank => rank.nameScientific === selectedGenusName)
 
-  const getSpecificRanks = (level) => {
+  const getSpecificRanks = (level: string) => {
     return (
       taxonomicRanks.filter(rank => rank.level === level).sort(function(a, b) {
         if  (a.nameScientific > b.nameScientific) { return 1 }
@@ -78,7 +96,7 @@ function Taxonomicrank({taxonomicRanks, birds, selectedOrderName, selectedFamily
   const allOrders = getSpecificRanks('BIRD_ORDER')
 
   const getChildren = () => {
-    const children = selectedGenusName ? birds.filter(bird => bird.genus === selectedGenusName) :
+    const children: BirdOrRank[] = selectedGenusName && birds ? birds.filter(bird => bird.genus === selectedGenusName) :
       selectedFamilyName ? taxonomicRanks.filter(rank => rank.parent === selectedFamilyName) :
       selectedOrderName ? taxonomicRanks.filter(rank => rank.parent === selectedOrderName) :
       allOrders
@@ -87,11 +105,11 @@ function Taxonomicrank({taxonomicRanks, birds, selectedOrderName, selectedFamily
     selectedFamilyName ? '/taxonomicrank/' + selectedOrderName + '/' + selectedFamilyName + '/' :
     selectedOrderName ? '/taxonomicrank/' + selectedOrderName + '/' : '/taxonomicrank/'
 
-    return children ? children.map((child, i) => createLink(linkTo + child.nameScientific,
+    return children ? children.map((child: BirdOrRank, i: number) => createLink(linkTo + child.nameScientific,
        child.nameFin ? child.nameFin + ' / ' + child.nameScientific : child.nameScientific, i)) : ''
   }
 
-  const createLink = (to, text, index) => {
+  const createLink = (to: string, text: string, index: number): JSX.Element => {
     return (
       <Link key={index} to={to} >
         <Button>
@@ -132,20 +150,20 @@ function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
 
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     fetch(BASE_URL + "/perform_login", {
       method: 'post',
-      body: {'username': username, 'password': password}
+      body: JSON.stringify({username: username, password: password})
     })
     .then(res => {
-      if (res.redirected) window.location = res.url
+      if (res.redirected) window.location = (res.url as unknown) as Location
     })
     .catch(e => console.warn(e))
 
   }
 
-  const handleFormDataChange = (event) => {
+  const handleFormDataChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     switch (event.target.name) {
       case 'username' :
           setUsername(event.target.value)
@@ -183,7 +201,9 @@ function Home() {
         'Content-Type': 'application/json' }
     })
     .then(res => {
-      if (res.redirected) window.location = res.url
+      if (res.redirected) {
+        window.location = (res.url as unknown) as Location
+      }
     })
     .catch(e => console.warn(e))
   }
@@ -205,9 +225,9 @@ function Home() {
   )
 }
 
-function App() {
-  const [birds, setBirds] = useState([])
-  const [taxonomicRanks, setRanks] = useState([])
+function App(): JSX.Element {
+  const [birds, setBirds] = useState<IBird[]>()
+  const [taxonomicRanks, setRanks] = useState<ITaxonomicRank[]>([])
 
   useEffect(() => {getBirds()}, [])
   useEffect(() => {getTaxonomicRanks()}, [])
@@ -219,7 +239,7 @@ function App() {
       if (res.ok) {
         return res.json() 
       } else {
-        throw new Error(res)
+        throw new Error('Response not ok.')
       }
     })
     .then(birds => setBirds(birds))
@@ -227,13 +247,13 @@ function App() {
   }
 
   const getTaxonomicRanks = () => {
-    const url = BASE_URL + '/taxonomicrank'
+    const url: string = BASE_URL + '/taxonomicrank'
     fetch(url)
     .then((res) => {
       if (res.ok) {
         return res.json() 
       } else {
-        throw new Error(res)
+        throw new Error('Response not ok.')
       }
     })
     .then(ranks => setRanks(ranks))
@@ -248,7 +268,7 @@ function App() {
             <Route exact path="/" render={() => <Home />} />
             <Route exact path="/birds" render={() => <Birds birds={birds} />} />
             <Route exact path="/birds/:id" render={({ match }) => 
-              <Bird bird={birds.find((bird) => 
+              <Bird bird={birds?.find((bird) => 
                 bird.nameScientific === match.params.id) } />} 
             />
             <Route exact path="/taxonomicrank" render={() => 
