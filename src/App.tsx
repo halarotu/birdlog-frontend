@@ -1,7 +1,8 @@
 import React, {useState, useEffect} from 'react';
 import './App.css';
-import {Box, Button, Card, CardMedia, Container, Grid, Input } from '@material-ui/core';
-import {BrowserRouter as Router, Route, Link} from 'react-router-dom'
+import {Box, Button, Card, CardMedia, Container, Grid } from '@material-ui/core';
+import {BrowserRouter as Router, Route, Link, Redirect, useHistory} from 'react-router-dom'
+import Cookies from 'universal-cookie'
 
 interface IBird {
   family: string,
@@ -20,7 +21,8 @@ interface ITaxonomicRank {
 
 type BirdOrRank = IBird | ITaxonomicRank;
 
-const BASE_URL = 'http://localhost:8080/api'
+const BASE_URL = 'http://localhost:8080'
+const COOKIE_NAME = 'BL_AUTH'
 
 function Birds({birds}: {birds: IBird[] | undefined}): JSX.Element {
   birds = birds?.sort(function(a: IBird, b: IBird) {
@@ -145,24 +147,30 @@ function Taxonomicrank({taxonomicRanks, birds, selectedOrderName, selectedFamily
   )
 }
 
-function Login() {
+function Login(props: any) {
 
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState<string>('')
+  const [password, setPassword] = useState<string>('')
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    fetch(BASE_URL + "/perform_login", {
+    fetch(BASE_URL + "/auth", {
       method: 'post',
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({username: username, password: password})
     })
-    .then(res => {
-      if (res.redirected) window.location = (res.url as unknown) as Location
+    .then(res => res.json())
+    .then(body =>  {
+      const cookies = new Cookies()
+      const exp = new Date();
+      exp.setTime(exp.getTime() + (24*60*60*1000));
+      cookies.set(COOKIE_NAME, body.token, {path: '/', expires: exp})
+      setPassword('')
+      props.setAuthentication(true)
     })
-    .catch(e => console.warn(e))
-
+    .catch(_e => console.warn('Authentication failed.'))
   }
-
+  
   const handleFormDataChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     switch (event.target.name) {
       case 'username' :
@@ -188,24 +196,25 @@ function Login() {
       <div>
         <input type="submit" name="submit-button" value="Kirjaudu" />
       </div>
+      {props.authenticated ? 
+      <Route render={({location}) => <Redirect to={{pathname: '/', state: {from: location}}}/>} /> 
+      : <div /> 
+      }
     </form>
   )
 }
 
-function Home() {
+function Home(props: any) {
+  const history = useHistory()
 
-  const onLogout = () => {
-    fetch(BASE_URL + "/perform_logout", {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/json' }
-    })
-    .then(res => {
-      if (res.redirected) {
-        window.location = (res.url as unknown) as Location
-      }
-    })
-    .catch(e => console.warn(e))
+  const onLogout = (): void => {
+    const cookies = new Cookies()
+    cookies.remove(COOKIE_NAME)
+    props.setAuthentication(false)
+  }
+
+  const onLogin = () => {
+    history.push('/login')
   }
 
   return (
@@ -220,20 +229,23 @@ function Home() {
           image="/lapasorsa-bw.jpeg"
           title="Lapasorsa"
         />
-        <Button onClick={onLogout}>Kirjaudu ulos</Button>
+        {props.authenticated ? <Button onClick={onLogout}>Kirjaudu ulos</Button> : <Button onClick={onLogin}>Kirjaudu</Button>}
     </Box>
   )
 }
 
 function App(): JSX.Element {
+  const cookies = new Cookies()
+
   const [birds, setBirds] = useState<IBird[]>()
   const [taxonomicRanks, setRanks] = useState<ITaxonomicRank[]>([])
+  const [authenticated, setAuthenticated] = useState<boolean>(cookies.get(COOKIE_NAME) ? true : false)
 
   useEffect(() => {getBirds()}, [])
   useEffect(() => {getTaxonomicRanks()}, [])
 
   const getBirds = () => {
-    const url = BASE_URL + '/bird'
+    const url = BASE_URL + '/api/bird'
     fetch(url)
     .then((res) => {
       if (res.ok) {
@@ -247,7 +259,7 @@ function App(): JSX.Element {
   }
 
   const getTaxonomicRanks = () => {
-    const url: string = BASE_URL + '/taxonomicrank'
+    const url: string = BASE_URL + '/api/taxonomicrank'
     fetch(url)
     .then((res) => {
       if (res.ok) {
@@ -265,7 +277,7 @@ function App(): JSX.Element {
       <Container maxWidth="sm">
           <h1>Suomessa havaitut lintulajit</h1>
           <Router>
-            <Route exact path="/" render={() => <Home />} />
+            <Route exact path="/" render={() => <Home authenticated={authenticated} setAuthentication={setAuthenticated}/>} />
             <Route exact path="/birds" render={() => <Birds birds={birds} />} />
             <Route exact path="/birds/:id" render={({ match }) => 
               <Bird bird={birds?.find((bird) => 
@@ -285,7 +297,7 @@ function App(): JSX.Element {
               <Taxonomicrank taxonomicRanks={taxonomicRanks} birds={birds} selectedOrderName={match.params.order} 
                 selectedFamilyName={match.params.family} selectedGenusName={match.params.genus} />} 
             />
-            <Route exact path="/login" render={() => <Login />} />
+            <Route exact path="/login" render={() => <Login authenticated={authenticated} setAuthentication={setAuthenticated}/>} />
           </Router>
       </Container>
     </div>
