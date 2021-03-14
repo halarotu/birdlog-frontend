@@ -1,10 +1,16 @@
 import React, {useState, useEffect} from 'react';
 import './App.css';
-import {Box, Button, Card, CardMedia, Container, Grid } from '@material-ui/core';
-import {BrowserRouter as Router, Route, Link, Redirect, useHistory} from 'react-router-dom'
+import {Box, Button, Container, Grid } from '@material-ui/core';
+import {BrowserRouter as Router, Route, Link} from 'react-router-dom'
 import Cookies from 'universal-cookie'
+import {Home} from './components/Home'
+import {Login} from './components/Login'
+import {MyImages} from './components/MyImages'
+import {AddImage} from './components/AddImage'
+import {Birds} from './components/Birds'
+import {Bird} from './components/Bird'
 
-interface IBird {
+export interface IBird {
   family: string,
   order: string,
   genus: string,
@@ -24,62 +30,6 @@ type BirdOrRank = IBird | ITaxonomicRank;
 const BASE_URL = 'http://localhost:8080'
 const COOKIE_NAME = 'BL_AUTH'
 
-function Birds({birds}: {birds: IBird[] | undefined}): JSX.Element {
-  birds = birds?.sort(function(a: IBird, b: IBird) {
-    if  (a.nameFin > b.nameFin) {
-      return 1
-    }
-    return -1
-  })
-
-  return (
-    <Box my={4}>
-      <h2>Lintulajit aakkosjärjestyksessä</h2>
-      <Link to="/" className="Link">
-        <Button fullWidth={true} variant='outlined' >Palaa etusivulle</Button>
-      </Link>
-      {birds ? birds.map((bird: IBird, i: number) => 
-        <Link to={'/birds/'+bird.nameScientific} key={i} > 
-          <Button>
-            {bird.nameFin}
-          </Button>
-        </Link>) 
-        : ''}
-    </Box>
-  )
-}
-
-function Bird({bird}: {bird: IBird | undefined}): JSX.Element {
-  return (
-    bird ?
-    <div>
-      <Link to="/" className="Link">
-        <Button fullWidth={true} variant='outlined'>Palaa etusivulle</Button>
-      </Link>
-      <Link to="/birds" className="Link">
-        <Button>Kaikki linnut</Button>
-      </Link>
-      <Link to="/taxonomicrank" className="Link">
-        <Button>Kaikki lahkot</Button>
-      </Link>
-      <Card className="Bird">
-        <div className="BirdInfo">
-          <h3>{bird.nameFin}</h3>
-          <p>Tieteellinen nimi: {bird.nameScientific}</p>
-          <p>Lahko: <Link to={"/taxonomicrank/" + bird.order}> {bird.order} </Link></p>
-          <p>Heimo: <Link to={"/taxonomicrank/" + bird.order + "/" + bird.family}> {bird.family} </Link></p>
-          <p>Suku: <Link to={"/taxonomicrank/" + bird.order + "/" + bird.family + "/" + bird.genus}> {bird.genus} </Link></p>
-        </div>
-        <CardMedia className="BirdPicture"
-          image="/Lapasorsa.jpg"
-          title="Lapasorsa"
-        />
-      </Card>
-    </div>
-    : <div/>
-  )
-}
-
 function Taxonomicrank({taxonomicRanks, birds, selectedOrderName, selectedFamilyName, selectedGenusName}: 
   {taxonomicRanks: ITaxonomicRank[], birds?: IBird[], selectedOrderName?: string, selectedFamilyName?: string, selectedGenusName?: string}): JSX.Element {
 
@@ -95,9 +45,9 @@ function Taxonomicrank({taxonomicRanks, birds, selectedOrderName, selectedFamily
     )
   }
 
-  const allOrders = getSpecificRanks('BIRD_ORDER')
+  const allOrders: ITaxonomicRank[] = getSpecificRanks('BIRD_ORDER')
 
-  const getChildren = () => {
+  const getChildren = (): JSX.Element[] => {
     const children: BirdOrRank[] = selectedGenusName && birds ? birds.filter(bird => bird.genus === selectedGenusName) :
       selectedFamilyName ? taxonomicRanks.filter(rank => rank.parent === selectedFamilyName) :
       selectedOrderName ? taxonomicRanks.filter(rank => rank.parent === selectedOrderName) :
@@ -108,7 +58,7 @@ function Taxonomicrank({taxonomicRanks, birds, selectedOrderName, selectedFamily
     selectedOrderName ? '/taxonomicrank/' + selectedOrderName + '/' : '/taxonomicrank/'
 
     return children ? children.map((child: BirdOrRank, i: number) => createLink(linkTo + child.nameScientific,
-       child.nameFin ? child.nameFin + ' / ' + child.nameScientific : child.nameScientific, i)) : ''
+       child.nameFin ? child.nameFin + ' / ' + child.nameScientific : child.nameScientific, i)) : []
   }
 
   const createLink = (to: string, text: string, index: number): JSX.Element => {
@@ -147,104 +97,18 @@ function Taxonomicrank({taxonomicRanks, birds, selectedOrderName, selectedFamily
   )
 }
 
-function Login(props: any) {
-
-  const [username, setUsername] = useState<string>('')
-  const [password, setPassword] = useState<string>('')
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    fetch(BASE_URL + "/auth", {
-      method: 'post',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({username: username, password: password})
-    })
-    .then(res => res.json())
-    .then(body =>  {
-      const cookies = new Cookies()
-      const exp = new Date();
-      exp.setTime(exp.getTime() + (24*60*60*1000));
-      cookies.set(COOKIE_NAME, body.token, {path: '/', expires: exp})
-      setPassword('')
-      props.setAuthentication(true)
-    })
-    .catch(_e => console.warn('Authentication failed.'))
-  }
-  
-  const handleFormDataChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    switch (event.target.name) {
-      case 'username' :
-          setUsername(event.target.value)
-          break
-      case 'password' :
-          setPassword(event.target.value)
-          break
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <h2>Kirjautuminen</h2>
-      <div className="FormElement">
-        <p>Käyttäjätunnus:</p>
-        <input type="text" name="username" value={username} onChange={handleFormDataChange} />
-      </div>      
-      <div className="FormElement">
-        <p>Salasana:</p>
-        <input type="password" name="password" value={password} onChange={handleFormDataChange} />
-      </div>
-      <div>
-        <input type="submit" name="submit-button" value="Kirjaudu" />
-      </div>
-      {props.authenticated ? 
-      <Route render={({location}) => <Redirect to={{pathname: '/', state: {from: location}}}/>} /> 
-      : <div /> 
-      }
-    </form>
-  )
-}
-
-function Home(props: any) {
-  const history = useHistory()
-
-  const onLogout = (): void => {
-    const cookies = new Cookies()
-    cookies.remove(COOKIE_NAME)
-    props.setAuthentication(false)
-  }
-
-  const onLogin = () => {
-    history.push('/login')
-  }
-
-  return (
-    <Box>
-        <Link to="/birds">
-          <Button>Linnut aakkosjärjestyksessä</Button>
-        </Link>
-        <Link to="/taxonomicrank">
-          <Button>Lintujen tieteellinen luokittelu</Button>
-        </Link>
-        <CardMedia className="FrontPagePicture"
-          image="/lapasorsa-bw.jpeg"
-          title="Lapasorsa"
-        />
-        {props.authenticated ? <Button onClick={onLogout}>Kirjaudu ulos</Button> : <Button onClick={onLogin}>Kirjaudu</Button>}
-    </Box>
-  )
-}
-
 function App(): JSX.Element {
   const cookies = new Cookies()
 
-  const [birds, setBirds] = useState<IBird[]>()
+  const [birds, setBirds] = useState<IBird[]>([])
   const [taxonomicRanks, setRanks] = useState<ITaxonomicRank[]>([])
-  const [authenticated, setAuthenticated] = useState<boolean>(cookies.get(COOKIE_NAME) ? true : false)
+  const [username, setUsername] = useState<string>('')
 
   useEffect(() => {getBirds()}, [])
   useEffect(() => {getTaxonomicRanks()}, [])
+  useEffect(() => {fetchUsername()})
 
-  const getBirds = () => {
+  const getBirds = (): void => {
     const url = BASE_URL + '/api/bird'
     fetch(url)
     .then((res) => {
@@ -258,7 +122,7 @@ function App(): JSX.Element {
     .catch(error => console.log(error))
   }
 
-  const getTaxonomicRanks = () => {
+  const getTaxonomicRanks = (): void => {
     const url: string = BASE_URL + '/api/taxonomicrank'
     fetch(url)
     .then((res) => {
@@ -272,12 +136,32 @@ function App(): JSX.Element {
     .catch(error => console.log(error))
   }
 
+  const fetchUsername = (): void => {
+    const token: string = cookies.get(COOKIE_NAME)
+    const url = BASE_URL + '/api/user/authenticated'
+    if (token) {
+      fetch(url, {
+        headers: {'Authorization': `Bearer ${token}`}
+      })
+      .then((res) => {
+        if (res.ok) {
+            return res.json() 
+        } else {
+            throw new Error('Response not ok.')
+        }
+      })
+      .then(user => setUsername(user.name))
+      .catch(() => setUsername(''))
+    }
+  }
+
   return (
     <div className="App">
       <Container maxWidth="sm">
           <h1>Suomessa havaitut lintulajit</h1>
           <Router>
-            <Route exact path="/" render={() => <Home authenticated={authenticated} setAuthentication={setAuthenticated}/>} />
+            <Route exact path="/" render={() => <Home authenticated={username} setUsername={setUsername} 
+              cookie_name={COOKIE_NAME}/>} />
             <Route exact path="/birds" render={() => <Birds birds={birds} />} />
             <Route exact path="/birds/:id" render={({ match }) => 
               <Bird bird={birds?.find((bird) => 
@@ -297,7 +181,10 @@ function App(): JSX.Element {
               <Taxonomicrank taxonomicRanks={taxonomicRanks} birds={birds} selectedOrderName={match.params.order} 
                 selectedFamilyName={match.params.family} selectedGenusName={match.params.genus} />} 
             />
-            <Route exact path="/login" render={() => <Login authenticated={authenticated} setAuthentication={setAuthenticated}/>} />
+            <Route exact path="/login" render={() => <Login authenticated={username} fetchUsername={fetchUsername} 
+              cookie_name={COOKIE_NAME} base_url={BASE_URL} />} />
+            <Route exact path="/addimage" render={() => <AddImage cookie_name={COOKIE_NAME} base_url={BASE_URL} birds={birds} />} />
+            <Route exact path="/myimages" render={() => <MyImages cookie_name={COOKIE_NAME} base_url={BASE_URL} username={username} birds={birds} />} />
           </Router>
       </Container>
     </div>

@@ -21,6 +21,7 @@
 
 .FrontPagePicture {
   height: 360px;
+  border-radius: 25px;
 }
 
 .FormElement {
