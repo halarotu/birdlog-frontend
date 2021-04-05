@@ -2,6 +2,7 @@ import {useState} from 'react'
 import {Redirect, Route} from 'react-router-dom'
 import {Input} from '@material-ui/core';
 import Cookies from 'universal-cookie'
+import { FormInputElement } from './FormInputElement';
 
 interface ILoginProps {
     authenticated: string,
@@ -50,15 +51,10 @@ export function Login(props: ILoginProps): JSX.Element {
     return (
       <form onSubmit={handleSubmit}>
         <h2>Kirjautuminen</h2>
-        <div className="FormElement">
-          <p>Käyttäjätunnus:</p>
-          <Input type="text" name="username" value={username} onChange={handleFormDataChange} />
-        </div>      
-        <div className="FormElement">
-          <p>Salasana:</p>
-          <Input type="password" name="password" value={password} onChange={handleFormDataChange} />
-        </div>
-        <div>
+        <FormInputElement elementLabel='Käyttäjätunnus:' type='text' name='username' value={username} onChange={handleFormDataChange} />
+        <FormInputElement elementLabel='Salasana:' type='password' name='password' value={password} onChange={handleFormDataChange}/>
+        <div style={{clear: 'both'}}/>
+        <div style={{marginTop: '20px'}}>
           <Input type="submit" name="submit-button" value="Kirjaudu" />
         </div>
         {props.authenticated ? 
