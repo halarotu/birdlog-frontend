@@ -65,16 +65,16 @@ export function AddImage(props: IAddImageProps): JSX.Element {
           <p>{image ? image.name : ''}</p>
           {image && <Button name='remove-button' onClick={() => {setImage(undefined)}} >Poista</Button>}
         </div>
-        <InputLabel>Kuva otettu:</InputLabel>
         <div className="FormElement">
-          <Input type="date" name="image-taken-date" onChange={(e) => {setDate(e.target.value)}}/>
+          <InputLabel className="FormElementLabel">Kuva otettu:</InputLabel>
+          <Input style={{display: 'block'}} type="date" name="image-taken-date" onChange={(e) => {setDate(e.target.value)}}/>
         </div>
-        <InputLabel>Kuvaus:</InputLabel>
         <div className="FormElement">
+          <InputLabel className="FormElementLabel">Kuvaus:</InputLabel>
           <Input type="text" multiline={true} rows={3} fullWidth={true} name="image-description" onChange={(e) => {setDescription(e.target.value)}}/>
         </div>
-        <InputLabel>Laji:</InputLabel>
         <div className="FormElement">
+          <InputLabel className="FormElementLabel">Laji:</InputLabel>
           <Select value={species} onChange={(e) => {typeof(e.target.value) === 'string' && setSpecies(e.target.value)}} fullWidth={true}>
             <MenuItem key={'default'} value='default'>Valitse laji</MenuItem>
             {birds.map((bird) => <MenuItem key={bird.nameScientific} value={bird.nameScientific}>{bird.nameFin}</MenuItem>) }
