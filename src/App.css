@@ -3,7 +3,6 @@
 }
 
 .Bird {
-  margin: 35px;
 }
 
 .BirdPicture {
@@ -19,11 +18,53 @@
   margin-top: 20px;
 }
 
+.HeaderButton {
+  height: 100%;
+}
+
+.HeaderButtonDiv {
+  width: 35%;
+}
+
+.HeaderTopic {
+  width: 30%;
+  margin-left: 35%;
+}
+
 .FrontPagePicture {
   height: 360px;
   border-radius: 25px;
+  margin-left: 0%;
+  margin-right: 0%;
+  margin-bottom: 20px;
 }
 
 .FormElement {
   margin-bottom: 20px;
+  margin-left: 20%;
+  margin-right: 20%;
+  width: 60%;
+}
+
+.FormElementLabel {
+  float: left;
+  margin-bottom: 20px;
+}
+
+@media only screen and (max-width: 768px) {
+  .HeaderButton {
+    height: 50%;
+    width: 100%;
+  }
+}
+
+@media only screen and (max-width: 500px) {
+  .FrontPagePicture {
+    height: 200px;
+  }
+
+  .HeaderTopic {
+    width: 40%;
+    margin-left: 25%;
+  }
 }
