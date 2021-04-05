@@ -2,7 +2,7 @@ import {Box, Button} from '@material-ui/core';
 import {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom'
 import Cookies from 'universal-cookie'
-import {IImageMetadata, Image} from './Image'
+import {IImageMetadata, IImageMetadataList, Image} from './Image'
 import {IBird} from '../App'
 
 interface IMyImagesProps {
@@ -16,49 +16,24 @@ export function MyImages(props: IMyImagesProps): JSX.Element {
     const username = props.username
     const cookies = new Cookies()
     const [metadatas, setMetadatas] = useState<IImageMetadata[]>([])
+    const [page, setPage] = useState<number>(0)
+    const [totalPageCount, setPageCount] = useState<number>()
 
     useEffect(() => { 
-        const fetchUserImageIds = (name: string): void => {
-            if (name) {
-                const url = props.base_url + '/api/image/user/' + name
-                fetch(url)
-                .then((res) => {
-                    if (res.ok) {
-                        return res.json()
-                    } else {
-                        throw new Error('Response not ok.')
-                    }
-                })
-                .then(async (ids) => {
-                    const metas: IImageMetadata[] = []
-                    for (let i=0; i<ids.length; i++) {
-                        const meta = await fetchImageMetadata(ids[i])
-                        if (meta) {
-                            meta.id = ids[i]
-                            metas.push(meta)
-                        }
-                    }
-                    setMetadatas(metas)
-                })
-                .catch(error => console.error(error))
-            }
-        }
-
-        const fetchImageMetadata = async (id: number): Promise<IImageMetadata | null> => {
-            let metadata: IImageMetadata | null = null
-            const url = props.base_url + `/api/image/${id.toString()}/metadata`
-    
+        const fetchUserImageMetadatas = async (user: string): Promise<void> => {
+            const url = props.base_url + `/api/image/user/${user}?page=${page}`
             const res: Response = await fetch(url)
             if (res.ok) {
-                metadata = (res.json() as unknown) as IImageMetadata
+                const metadatas = (await res.json() as unknown) as IImageMetadataList
+                setMetadatas(metadatas.metadataDTOList)
+                setPageCount(metadatas.totalPageCount)
             } else {
                 console.error('Response not ok.')
             }
-            return Promise.resolve(metadata)
         }
         
-        fetchUserImageIds(props.username)}, 
-        [props.username, props.base_url]
+        fetchUserImageMetadatas(props.username)}, 
+        [props.username, props.base_url, page]
     )
 
     const removeImage = (id: number): void => {
@@ -86,11 +61,17 @@ export function MyImages(props: IMyImagesProps): JSX.Element {
             </Link>
         </div>
         <Box margin={5} >
-            {username ? `Omat kuvat` : 'Ei käyttäjää!'}
+            {username ? <h4>Omat kuvat</h4> : 'Ei käyttäjää!'}
+            <p>Käyttäjänimi: {username}</p>
+            <p>Kuvia yhteensä: TODO </p>
         </Box>
         <div>
             {metadatas.map((meta) => <Image key={meta.id} metadata={meta} base_url={props.base_url} removeImage={removeImage} 
                 bird={props.birds.find(b => b.nameScientific === meta.bird)}/>)}
+        </div>
+        <div>
+            {page > 0 && <Button onClick={() => setPage(page-1)}>Takaisin</Button>}
+            {totalPageCount && totalPageCount-1 > page && <Button onClick={() => setPage(page+1)}>Aiemmat</Button> }
         </div>
       </div>
     )
